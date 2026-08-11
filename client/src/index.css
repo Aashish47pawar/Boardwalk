@@ -1,0 +1,370 @@
+/* ==============================================================
+   BOARDWALK — Collaborative Task Manager
+   Design concept: a literal pinboard. Tasks are index cards pinned
+   at a slight angle; a colored pushpin marks priority.
+   ============================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Palette */
+  --pinboard: #2e3440;
+  --pinboard-deep: #242832;
+  --card: #fbf7ee;
+  --card-edge: #e7dfcc;
+  --ink: #2a2730;
+  --muted: #6b6f7a;
+  --line: rgba(255, 255, 255, 0.1);
+
+  --pin-low: #5fb49c;
+  --pin-medium: #e8a33d;
+  --pin-high: #d1495b;
+  --accent: #6fa8c9;
+  --accent-ink: #16323f;
+
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { min-height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--card);
+  background-color: var(--pinboard);
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+button { font-family: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; }
+a { color: var(--accent); text-decoration: none; }
+
+/* ---- Buttons --------------------------------------------------- */
+
+.btn {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { box-shadow: 0 6px 16px rgba(111, 168, 201, 0.4); }
+
+.btn-ghost { background: rgba(255, 255, 255, 0.08); color: var(--card); border: 1px solid var(--line); }
+.btn-ghost:hover { background: rgba(255, 255, 255, 0.16); }
+
+.btn-danger { background: rgba(209, 73, 91, 0.16); color: #ffb4bd; border: 1px solid rgba(209, 73, 91, 0.4); }
+.btn-danger:hover { background: rgba(209, 73, 91, 0.28); }
+
+.btn-block { width: 100%; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* ---- Navbar ------------------------------------------------------ */
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 28px;
+  background: var(--pinboard-deep);
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.navbar .brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navbar .brand-mark {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pin-medium);
+  box-shadow: 0 0 0 3px rgba(232, 163, 61, 0.25);
+}
+
+.navbar .nav-right { display: flex; align-items: center; gap: 14px; }
+.navbar .user-tag { font-family: var(--font-mono); font-size: 0.85rem; color: var(--muted); }
+
+/* ---- Board layout ------------------------------------------------ */
+
+.board-wrap { padding: 24px 28px 60px; max-width: 1180px; margin: 0 auto; }
+
+.board-status {
+  min-height: 1.4rem;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.board-status.is-error { color: #ffb4bd; }
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.column {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  min-height: 200px;
+}
+
+.column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.column-header h2 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.column-count {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+.column-cards { display: flex; flex-direction: column; gap: 14px; }
+
+.column-empty {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 18px 6px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+
+/* ---- Task card (the pinned index card) ---------------------------- */
+
+.task-card {
+  position: relative;
+  background: var(--card);
+  color: var(--ink);
+  border-radius: var(--radius);
+  padding: 16px 14px 14px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--card-edge);
+  transform: rotate(-0.6deg);
+}
+.column-cards .task-card:nth-child(even) { transform: rotate(0.6deg); }
+
+.task-card .pin {
+  position: absolute;
+  top: -7px;
+  left: 16px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 -2px 2px rgba(0, 0, 0, 0.15);
+}
+.pin-low { background: var(--pin-low); }
+.pin-medium { background: var(--pin-medium); }
+.pin-high { background: var(--pin-high); }
+
+.task-card h3 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  margin: 6px 0 6px;
+  line-height: 1.3;
+}
+
+.task-card p.desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.task-meta span {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px dashed var(--card-edge);
+  padding-top: 10px;
+}
+
+.status-select {
+  font-size: 0.78rem;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--card-edge);
+  background: #fff;
+  color: var(--ink);
+}
+
+.task-icon-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 4px 6px;
+}
+.task-icon-btn:hover { color: var(--pin-high); }
+
+/* ---- Modal (create / edit task) ------------------------------------ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 22, 28, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 50;
+}
+
+.modal {
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 16px;
+  padding: 26px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.modal h2 {
+  font-family: var(--font-display);
+  margin: 0 0 18px;
+}
+
+.field { margin-bottom: 14px; }
+
+.field label {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--card-edge);
+  border-radius: 8px;
+  font-size: 0.92rem;
+  background: #fff;
+  color: var(--ink);
+}
+
+.field textarea { resize: vertical; min-height: 70px; }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.form-error {
+  color: var(--pin-high);
+  font-size: 0.85rem;
+  margin: -4px 0 14px;
+}
+
+/* ---- Auth pages ----------------------------------------------------- */
+
+.auth-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.auth-card {
+  background: var(--card);
+  color: var(--ink);
+  width: 100%;
+  max-width: 380px;
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.auth-card .brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-card .brand-mark {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--pin-medium);
+}
+
+.auth-card .tagline { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+
+.auth-card .switch { margin-top: 18px; font-size: 0.88rem; text-align: center; color: var(--muted); }
+
+/* ---- Responsive ------------------------------------------------------ */
+
+@media (max-width: 880px) {
+  .board { grid-template-columns: 1fr; }
+  .navbar { padding: 12px 16px; }
+  .board-wrap { padding: 18px 16px 48px; }
+}
